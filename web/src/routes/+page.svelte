@@ -1,11 +1,11 @@
 <script>
   import { onMount } from 'svelte';
   import CommandBar from '$components/CommandBar.svelte';
-  import EventTimeline from '$components/EventTimeline.svelte';
-  import NodeCard from '$components/NodeCard.svelte';
+  import EventLogPane from '$components/EventLogPane.svelte';
+  import NodeListPane from '$components/NodeListPane.svelte';
   import NodeDetail from '$components/NodeDetail.svelte';
-  import OverviewTiles from '$components/OverviewTiles.svelte';
-  import TerminalHeader from '$components/TerminalHeader.svelte';
+  import ServicePane from '$components/ServicePane.svelte';
+  import StatusLine from '$components/StatusLine.svelte';
 
   export let data;
 
@@ -15,6 +15,7 @@
   let selectedId = nodes[0]?.nodeId ?? null;
   let command = '';
   let statusLine = 'type help for available commands';
+  let transport = 'disconnected';
   let commandFeed = [
     { id: 'boot', nodeId: 'local-shell', level: 'info', message: 'OpsPulse terminal ready', createdAt: new Date().toISOString() }
   ];
@@ -100,8 +101,15 @@
     command = '';
   }
 
+  function mergeEventLog() {
+    return [...commandFeed, ...events].slice(0, 80);
+  }
+
   onMount(() => {
     const source = new EventSource('/api/v1/stream');
+    source.onopen = () => {
+      transport = 'sse';
+    };
     source.onmessage = (event) => {
       const payload = JSON.parse(event.data);
       if (payload.type === 'node_update') {
@@ -112,7 +120,13 @@
         events = [payload.event, ...events].slice(0, 50);
       }
     };
-    return () => source.close();
+    source.onerror = () => {
+      transport = 'disconnected';
+    };
+    return () => {
+      transport = 'disconnected';
+      source.close();
+    };
   });
 </script>
 
@@ -121,38 +135,22 @@
   <meta name="description" content="Terminal-first local DevOps console for Linux nodes and services." />
 </svelte:head>
 
-<div class="min-h-screen px-3 py-4 sm:px-4 lg:px-6">
-  <div class="mx-auto max-w-[1680px] space-y-4">
-    <TerminalHeader {overview} />
-    <OverviewTiles {overview} />
+<div class="min-h-screen px-2 py-2 sm:px-3 lg:px-4">
+  <div class="terminal-frame mx-auto max-w-[1800px]">
+    <StatusLine {overview} {transport} />
 
-    <div class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-      <section class="terminal-pane p-4">
-        <div class="mb-3 flex items-center justify-between border-b border-terminal-border pb-3">
-          <h2 class="text-sm uppercase tracking-[0.24em] text-terminal-fg">node pane</h2>
-          <span class="text-[11px] text-terminal-muted">{nodes.length} entries</span>
-        </div>
-        {#if nodes.length > 0}
-          <div class="space-y-3">
-          {#each nodes as node}
-            <div on:click={() => selectNode(node.nodeId)} on:keydown={(event) => handleNodeKeydown(event, node.nodeId)} role="button" tabindex="0">
-              <NodeCard node={node} active={node.nodeId === selectedId} />
-            </div>
-          {/each}
-          </div>
-        {:else}
-          <div class="py-8 text-sm text-terminal-dim">
-            no nodes available; start an agent or enable demo mode
-          </div>
-        {/if}
-      </section>
+    <div class="frame-main">
+      <NodeListPane
+        {nodes}
+        {selectedId}
+        onSelect={selectNode}
+        onKeySelect={handleNodeKeydown}
+      />
       <NodeDetail node={selectedNode} />
+      <ServicePane node={selectedNode} />
     </div>
 
-    <div class="grid gap-4 xl:grid-cols-2">
-      <EventTimeline events={[...commandFeed, ...events].slice(0, 50)} title="shell + live log" />
-      <EventTimeline {events} title="cluster event stream" />
-    </div>
+    <EventLogPane events={mergeEventLog()} title="EventLogPane" />
 
     <CommandBar bind:value={command} {statusLine} on:submit={handleCommandSubmit} />
   </div>

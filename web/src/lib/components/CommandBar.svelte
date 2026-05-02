@@ -11,9 +11,8 @@
   }
 </script>
 
-<section class="terminal-pane p-3">
-  <div class="mb-2 text-xs uppercase tracking-[0.24em] text-terminal-muted">Command Bar</div>
-  <div class="flex items-center gap-2 rounded border border-terminal-border bg-terminal-bg px-3 py-2 text-sm">
+<section class="pane px-3 py-2">
+  <div class="flex items-center gap-2 text-sm">
     <span class="text-terminal-green">opspulse&gt;</span>
     <input
       bind:value
@@ -21,6 +20,6 @@
       placeholder="help | nodes | inspect <node> | events | clear"
       on:keydown={(event) => event.key === 'Enter' && submit()}
     />
+    <span class="text-xs text-terminal-dim">{statusLine}</span>
   </div>
-  <div class="mt-2 min-h-5 text-xs text-terminal-dim">{statusLine}</div>
 </section>
