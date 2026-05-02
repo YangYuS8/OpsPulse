@@ -1,0 +1,8 @@
+{$OPS_DOMAIN:localhost} {
+  encode gzip zstd
+
+  @api path /api/* /healthz
+  reverse_proxy @api server:8080
+
+  reverse_proxy web:3000
+}

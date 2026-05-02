@@ -1,0 +1,14 @@
+[Unit]
+Description=OpsPulse Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/opspulse-agent --config /etc/opspulse/agent.yaml
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

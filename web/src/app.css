@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(255, 79, 216, 0.18), transparent 28%),
+    radial-gradient(circle at right, rgba(60, 242, 255, 0.14), transparent 32%),
+    #070b14;
+}
+
+body {
+  min-height: 100vh;
+  background: transparent;
+  color: #d8f7ff;
+}
+
+.panel {
+  @apply rounded-2xl border border-cyan-400/20 bg-slate-950/70 shadow-glow backdrop-blur;
+}
+
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(60, 242, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 242, 255, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

@@ -1,0 +1,41 @@
+services:
+  server:
+    build:
+      context: ./server
+    environment:
+      OPS_AGENT_TOKEN: ${OPS_AGENT_TOKEN:-change-me}
+      OPS_DB_PATH: /data/opspulse.db
+      OPS_OFFLINE_TIMEOUT: 45s
+    volumes:
+      - server-data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+    environment:
+      PUBLIC_API_BASE: http://server:8080
+      HOST: 0.0.0.0
+      PORT: 3000
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - web
+      - server
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  server-data:
+  caddy-data:
+  caddy-config:

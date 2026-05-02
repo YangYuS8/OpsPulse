@@ -1,0 +1,9 @@
+node_id: node-edge-01
+server_url: https://ops.example.com
+token: change-me
+interval: 15s
+docker_enabled: true
+service_whitelist:
+  - docker
+  - caddy
+  - ssh
