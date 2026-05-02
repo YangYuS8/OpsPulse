@@ -2,15 +2,15 @@
 
 OpsPulse is a terminal-first homelab heartbeat console powered by a lightweight Go agent.
 
-OpsPulse 是一个本地优先（local-first）的轻量级 DevOps Dashboard + Agent 系统。
+OpsPulse is a lightweight local-first DevOps console focused on one job: showing real host telemetry reported by a real agent.
 
-核心原则：**节点数据只能来自真实的宿主机 Agent 上报**。
+Core principles:
 
-- `agent` 不跑在 Docker Compose 里
-- `server/web/caddy` 可以通过 Docker Compose 运行
-- 没有真实 Agent 时，Dashboard 会显示空状态，而不是伪造 demo 节点
+- the Agent runs on real hosts, not inside Docker Compose
+- `server`, `web`, and `caddy` can run through Docker Compose
+- when no Agent is connected, the UI shows an empty state instead of fake demo data
 
-当前 v0.1 只做真实 Agent 上报的节点、资源、服务和事件展示。
+OpsPulse v0.1 focuses only on real Agent-reported nodes, resource signals, service health, and event visibility.
 
 ![OpsPulse screenshot placeholder](docs/screenshot.png)
 
@@ -44,24 +44,24 @@ OpsPulse 是一个本地优先（local-first）的轻量级 DevOps Dashboard + A
 - [x] Compose deployment behind existing reverse proxy
 - [ ] screenshot capture for `docs/screenshot.png`
 
-## 本地开发
+## Local Development
 
-### 环境要求
+### Requirements
 
 - Go 1.23+
 - Node.js 22+
 - npm 10+
 
-### 1. 启动 Server
+### 1. Start the Server
 
 ```bash
 cd server
 OPS_AGENT_TOKEN=change-me go run ./cmd/server
 ```
 
-默认监听 `http://localhost:8080`。
+The server listens on `http://localhost:8080` by default.
 
-### 2. 启动前端
+### 2. Start the Frontend
 
 ```bash
 cd web
@@ -69,13 +69,13 @@ npm install
 npm run dev -- --host
 ```
 
-打开 `http://localhost:5173`。
+Open `http://localhost:5173`.
 
-前端默认通过相对路径访问 `/api` 和 `/healthz`，开发模式下由 Vite 自动代理到 `http://localhost:8080`。
+The frontend uses relative paths for `/api` and `/healthz`. In development, Vite proxies those requests to `http://localhost:8080`.
 
-### 3. 启动宿主机 Agent
+### 3. Start the Host Agent
 
-先按宿主机环境创建配置文件，例如：
+Create a host-specific config file, for example:
 
 ```yaml
 node_id: node-local-01
@@ -88,23 +88,23 @@ service_whitelist:
   - ssh
 ```
 
-然后运行：
+Then run:
 
 ```bash
 cd agent
 go run ./cmd/agent --config /path/to/agent.yaml
 ```
 
-说明：
+Notes:
 
-- 只有宿主机 Agent 启动并开始上报后，Dashboard 才会显示节点
-- 如果没有任何 Agent，节点 pane 会显示空状态提示，这是预期行为
+- the dashboard only shows nodes after a real host Agent starts reporting
+- if no Agent is connected, the node pane shows an empty but honest state
 
-## 命令栏交互
+## Command Bar
 
-Dashboard 底部提供 `opspulse>` 命令栏，仅用于前端本地交互，不执行任何远程命令。
+The bottom `opspulse>` command bar is a frontend-only interaction surface. It does not execute remote commands.
 
-支持命令：
+Supported commands:
 
 - `help`
 - `nodes`
@@ -114,56 +114,56 @@ Dashboard 底部提供 `opspulse>` 命令栏，仅用于前端本地交互，不
 
 ## Docker Compose
 
-Compose 只负责：
+Compose is only responsible for:
 
 - `server`
 - `web`
 - `caddy`
 
-不负责启动 Agent。
+It does not start the Agent.
 
-### 启动
+### Start the Stack
 
 ```bash
 export OPS_AGENT_TOKEN='replace-with-long-random-token'
 docker compose up -d --build
 ```
 
-如果构建环境访问 `proxy.golang.org` 较慢或不可达，可以显式指定 Go 模块代理：
+If your environment has trouble reaching `proxy.golang.org`, you can explicitly set a Go module proxy:
 
 ```bash
 docker compose build --build-arg GOPROXY=https://goproxy.cn,direct server
 docker compose up -d
 ```
 
-Compose 中保留了 Caddy，但它只作为 OpsPulse 内部入口，不占用宿主机 `80/443`。
+Caddy remains part of the stack, but only as the internal OpsPulse entrypoint. It does not occupy host `80/443`.
 
-默认映射：
+Default mapping:
 
 ```text
 127.0.0.1:8090 -> caddy:80
 ```
 
-可通过环境变量自定义：
+Override it with:
 
 ```bash
 export OPS_CADDY_PORT=8090
 ```
 
-访问方式：
+Access URL:
 
 - `http://127.0.0.1:8090/`
 
-路由规则：
+Routing:
 
-- `/api/*`、`/healthz` -> `server:8080`
-- 其他路径 -> `web:3000`
+- `/api/*`, `/healthz` -> `server:8080`
+- everything else -> `web:3000`
 
-### 让 Compose 页面显示真实节点
+### Show Real Nodes Behind Compose
 
-必须额外在宿主机上启动 Agent，并让它指向 Compose 内的 Server。
+To see real nodes in the Compose-hosted UI, start the Agent on a host and point it to the Compose entrypoint.
 
-示例配置：
+Example config:
 
 ```yaml
 node_id: node-host-01
@@ -177,7 +177,7 @@ service_whitelist:
   - caddy
 ```
 
-然后在宿主机执行：
+Then run on the host:
 
 ```bash
 cd agent
@@ -185,11 +185,11 @@ go build -o opspulse-agent ./cmd/agent
 ./opspulse-agent --config /path/to/agent.yaml
 ```
 
-注意：如果 `server_url` 指向 `http://127.0.0.1:8090`，Agent 走的是 Caddy 入口；如果你希望直接连接 Server，也可以指向 `http://127.0.0.1:8080`，前提是你自己暴露了该端口。
+If `server_url` points to `http://127.0.0.1:8090`, the Agent goes through Caddy. If you prefer to connect directly to the server, you can point it to `http://127.0.0.1:8080`, assuming you explicitly expose that port yourself.
 
-## 已有 Nginx 反代示例
+## Existing Nginx Reverse Proxy Example
 
-如果宿主机已经有 Nginx，可把公网域名或内网入口反代到 `127.0.0.1:8090`：
+If the host already runs Nginx, you can proxy a public or internal domain to `127.0.0.1:8090`:
 
 ```nginx
 server {
@@ -209,11 +209,11 @@ server {
 }
 ```
 
-## Agent 配置
+## Agent Configuration
 
-部署示例配置：`agent/agent.example.yaml`
+Deployment example config: `agent/agent.example.yaml`
 
-Agent 保持单二进制运行，支持 YAML 配置文件，主动向 Server 上报：
+The Agent remains a single binary with YAML configuration. It reports:
 
 - hostname
 - uptime
@@ -222,37 +222,41 @@ Agent 保持单二进制运行，支持 YAML 配置文件，主动向 Server 上
 - disk usage
 - load average
 - metrics history for recent heartbeats
-- Docker running/exited container count and container details
-- systemd service status from whitelist
+- Docker running/exited count and container details
+- systemd whitelist services
 - HTTP/TCP health checks from whitelist-style config
 
-## API 概览
+## API Overview
 
-- `POST /api/v1/agents/heartbeat`：Agent 心跳上报（Bearer Token 鉴权）
-- `GET /api/v1/overview`：Dashboard 总览
-- `GET /api/v1/nodes`：节点列表
-- `GET /api/v1/nodes/:nodeId`：节点详情
-- `GET /api/v1/events`：事件时间线
-- `GET /api/v1/stream`：SSE 实时流
-- `GET /healthz`：健康检查
+- `POST /api/v1/agents/heartbeat` - Agent heartbeat ingestion (Bearer Token auth)
+- `GET /api/v1/overview` - dashboard overview
+- `GET /api/v1/nodes` - node list
+- `GET /api/v1/nodes/:nodeId` - node detail
+- `GET /api/v1/events` - event stream history
+- `GET /api/v1/stream` - SSE live stream
+- `GET /healthz` - health check
 
-## systemd Agent 示例
+## systemd Agent Example
 
-服务文件见：`deploy/systemd/opspulse-agent.service`
+See: `deploy/systemd/opspulse-agent.service`
 
-## 安全说明
+## Security Notes
 
-- Agent 与 Server 通过 Bearer Token 鉴权。
-- 前端命令栏只做本地 UI 交互，不实现远程命令执行。
-- Dashboard 不返回真实来源 IP。
-- 不伪造 demo 节点，不在没有 Agent 的情况下伪装系统已接入。
+- Agent-to-server traffic uses Bearer Token authentication.
+- The frontend command bar is local UI only, not remote execution.
+- The dashboard does not expose source IP addresses.
+- The project does not fake nodes or pretend the system is connected when no Agent exists.
 
-## 后续扩展
+## Project Note
 
-当前代码结构仍然保留了后续扩展边界，可继续增加：
+See: `docs/PROJECT_NOTE.md`
 
-- Kubernetes 集群状态
-- GitHub Actions / Gitea Actions 概览
-- 历史指标图表
-- 日志检索
-- 受限控制操作
+## Possible Future Extensions
+
+This v0.1 intentionally stops early, but the current structure leaves room for:
+
+- Kubernetes cluster status
+- GitHub Actions / Gitea Actions visibility
+- richer historical trend views
+- log browsing
+- constrained control actions
