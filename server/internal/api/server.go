@@ -74,7 +74,7 @@ func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	if report.SentAt.IsZero() {
 		report.SentAt = time.Now().UTC()
 	}
-	node, event, err := s.store.UpsertHeartbeat(r.Context(), report)
+	node, events, err := s.store.UpsertHeartbeat(r.Context(), report)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +85,9 @@ func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broker.PublishNode(node, overview)
-	s.broker.PublishEvent(event)
+	for _, event := range events {
+		s.broker.PublishEvent(event)
+	}
 	writeJSON(w, http.StatusAccepted, map[string]any{"status": "accepted", "node": node})
 }
 

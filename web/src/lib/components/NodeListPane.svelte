@@ -26,7 +26,7 @@
 </script>
 
 <section class="pane pane-scroll">
-  <div class="pane-title">NodeListPane</div>
+  <div class="pane-title">NODES</div>
   <div class="table-head text-terminal-muted">state host cpu mem disk age</div>
 
   {#if nodes.length > 0}

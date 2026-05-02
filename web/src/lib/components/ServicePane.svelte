@@ -15,7 +15,7 @@
 </script>
 
 <section class="pane pane-scroll">
-  <div class="pane-title">ServicePane</div>
+  <div class="pane-title">SERVICES</div>
 
   {#if node && node.services?.length}
     <div class="mt-1 space-y-px text-sm">
@@ -26,9 +26,17 @@
           <span class="w-[120px] truncate text-terminal-dim text-right">{service.active}/{service.sub}</span>
         </div>
       {/each}
+      {#each node.checks ?? [] as check}
+        <div class="service-row">
+          <span class={`w-[56px] ${badgeTone(check.status)}`}>{badge(check.status)}</span>
+          <span class="flex-1 truncate text-terminal-fg">{check.name}</span>
+          <span class="w-[120px] truncate text-terminal-dim">{check.type}:{check.target}</span>
+          <span class="w-[120px] truncate text-terminal-dim text-right">{check.latencyMs}ms {check.error || ''}</span>
+        </div>
+      {/each}
     </div>
   {:else if node}
-    <div class="empty-pane py-6 text-sm text-terminal-dim">no whitelisted services reported for this node</div>
+    <div class="empty-pane py-6 text-sm text-terminal-dim">no services or checks reported for this node</div>
   {:else}
     <div class="empty-pane py-6 text-sm text-terminal-dim">select a node to inspect services</div>
   {/if}

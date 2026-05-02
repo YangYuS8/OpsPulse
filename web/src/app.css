@@ -40,8 +40,18 @@ body {
 
 .frame-main {
   display: grid;
-  grid-template-columns: minmax(280px, 0.95fr) minmax(420px, 1.35fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(460px, 1.4fr) minmax(320px, 1fr);
   min-height: 0;
+}
+
+.right-stack {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+}
+
+.pane-containers {
+  border-bottom: 0;
 }
 
 .status-line {
@@ -173,6 +183,10 @@ input::placeholder {
 
   .frame-main {
     grid-template-columns: 1fr;
+  }
+
+  .right-stack {
+    grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr);
   }
 
   .pane {

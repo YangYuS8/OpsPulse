@@ -20,22 +20,32 @@
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  const serviceBadge = (status) => {
-    if (status === 'healthy') return '[ OK ]';
-    if (status === 'degraded') return '[WARN]';
-    return '[FAIL]';
-  };
-
   const meter = (value) => {
     const width = 24;
     const filled = Math.max(0, Math.min(width, Math.round(((value || 0) / 100) * width)));
     return `${'='.repeat(filled)}${'.'.repeat(width - filled)}`;
   };
+
+  const blocks = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+
+  function sparkline(points, key) {
+    if (!points?.length) return 'no-history';
+    const values = points.map((point) => Number(point[key] || 0));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (min === max) return blocks[3].repeat(values.length);
+    return values
+      .map((value) => {
+        const index = Math.max(0, Math.min(blocks.length - 1, Math.round(((value - min) / (max - min)) * (blocks.length - 1))));
+        return blocks[index];
+      })
+      .join('');
+  }
 </script>
 
 {#if node}
   <section class="pane pane-scroll px-4 py-3 sm:px-4 sm:py-3">
-    <div class="pane-title">NodeInspectorPane</div>
+    <div class="pane-title">INSPECT</div>
     <div class="mt-2 flex items-center justify-between gap-4 border-b border-terminal-border pb-2">
       <div>
         <h2 class="text-base text-terminal-fg">inspect {node.hostname}</h2>
@@ -80,6 +90,16 @@
           <div class="meter text-terminal-green">[{meter(node.disk.usage)}]</div>
           <div class="mt-1 text-xs text-terminal-muted">{formatBytes(node.disk.used)} / {formatBytes(node.disk.total)}</div>
         </div>
+      </div>
+    </div>
+
+    <div class="mt-4 border-t border-terminal-border pt-3">
+      <h3 class="section-label">trends</h3>
+      <div class="mt-3 space-y-2 text-sm">
+        <div class="flex items-center justify-between gap-4"><span class="w-16 text-terminal-dim">cpu</span><span class="flex-1 overflow-hidden text-terminal-green">{sparkline(node.metricsHistory, 'cpuUsage')}</span></div>
+        <div class="flex items-center justify-between gap-4"><span class="w-16 text-terminal-dim">mem</span><span class="flex-1 overflow-hidden text-terminal-green">{sparkline(node.metricsHistory, 'memoryUsage')}</span></div>
+        <div class="flex items-center justify-between gap-4"><span class="w-16 text-terminal-dim">disk</span><span class="flex-1 overflow-hidden text-terminal-green">{sparkline(node.metricsHistory, 'diskUsage')}</span></div>
+        <div class="flex items-center justify-between gap-4"><span class="w-16 text-terminal-dim">load</span><span class="flex-1 overflow-hidden text-terminal-green">{sparkline(node.metricsHistory, 'loadOne')}</span></div>
       </div>
     </div>
 

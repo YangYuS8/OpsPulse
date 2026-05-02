@@ -1,6 +1,6 @@
 <script>
   export let events = [];
-  export let title = 'EventLogPane';
+  export let title = 'EVENTS';
 
   function label(level) {
     if (level === 'warn') return 'WARN';

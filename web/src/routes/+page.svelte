@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import CommandBar from '$components/CommandBar.svelte';
+  import ContainerPane from '$components/ContainerPane.svelte';
   import EventLogPane from '$components/EventLogPane.svelte';
   import NodeListPane from '$components/NodeListPane.svelte';
   import NodeDetail from '$components/NodeDetail.svelte';
@@ -147,10 +148,13 @@
         onKeySelect={handleNodeKeydown}
       />
       <NodeDetail node={selectedNode} />
-      <ServicePane node={selectedNode} />
+      <div class="right-stack">
+        <ServicePane node={selectedNode} />
+        <ContainerPane node={selectedNode} />
+      </div>
     </div>
 
-    <EventLogPane events={mergeEventLog()} title="EventLogPane" />
+    <EventLogPane events={mergeEventLog()} title="EVENTS" />
 
     <CommandBar bind:value={command} {statusLine} on:submit={handleCommandSubmit} />
   </div>

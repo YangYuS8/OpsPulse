@@ -12,6 +12,7 @@
 </script>
 
 <section class="pane px-3 py-2">
+  <div class="pane-title mb-2 border-b-0 pb-0">SHELL</div>
   <div class="flex items-center gap-2 text-sm">
     <span class="text-terminal-green">opspulse&gt;</span>
     <input

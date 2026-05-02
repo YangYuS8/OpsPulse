@@ -1,5 +1,5 @@
 node_id: node-edge-01
-server_url: https://ops.example.com
+server_url: http://127.0.0.1:8090
 token: change-me
 interval: 15s
 docker_enabled: true
@@ -7,3 +7,13 @@ service_whitelist:
   - docker
   - caddy
   - ssh
+checks:
+  - name: caddy-http
+    type: http
+    target: http://127.0.0.1:8090/healthz
+    expected_status: 200
+    timeout: 3s
+  - name: ssh-tcp
+    type: tcp
+    target: 127.0.0.1:22
+    timeout: 3s

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +22,30 @@ type ServiceStatus struct {
 	Status string `json:"status"`
 }
 
+type ContainerStatus struct {
+	Name   string `json:"name"`
+	Image  string `json:"image"`
+	State  string `json:"state"`
+	Status string `json:"status"`
+}
+
+type CheckConfig struct {
+	Name           string
+	Type           string
+	Target         string
+	Timeout        time.Duration
+	ExpectedStatus int
+}
+
+type CheckStatus struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Target    string `json:"target"`
+	Status    string `json:"status"`
+	LatencyMS int64  `json:"latencyMs"`
+	Error     string `json:"error"`
+}
+
 type UsageMetric struct {
 	Used  uint64  `json:"used"`
 	Total uint64  `json:"total"`
@@ -33,8 +59,9 @@ type LoadAverage struct {
 }
 
 type DockerMetric struct {
-	Running int `json:"running"`
-	Exited  int `json:"exited"`
+	Running    int               `json:"running"`
+	Exited     int               `json:"exited"`
+	Containers []ContainerStatus `json:"containers"`
 }
 
 type Snapshot struct {
@@ -46,18 +73,20 @@ type Snapshot struct {
 	Load     LoadAverage     `json:"load"`
 	Docker   DockerMetric    `json:"docker"`
 	Services []ServiceStatus `json:"services"`
+	Checks   []CheckStatus   `json:"checks"`
 }
 
 type Collector struct {
 	services      []string
+	checks        []CheckConfig
 	dockerEnabled bool
 	prevIdle      uint64
 	prevTotal     uint64
 	hasPrevCPU    bool
 }
 
-func New(serviceWhitelist []string, dockerEnabled bool) *Collector {
-	return &Collector{services: serviceWhitelist, dockerEnabled: dockerEnabled}
+func New(serviceWhitelist []string, checks []CheckConfig, dockerEnabled bool) *Collector {
+	return &Collector{services: serviceWhitelist, checks: checks, dockerEnabled: dockerEnabled}
 }
 
 func (c *Collector) Snapshot() (Snapshot, error) {
@@ -72,6 +101,7 @@ func (c *Collector) Snapshot() (Snapshot, error) {
 	load, _ := readLoadAverage()
 	docker, _ := c.readDockerMetric()
 	services := c.readServices()
+	checks := c.runChecks()
 	return Snapshot{
 		Hostname: hostname,
 		Uptime:   uptime,
@@ -81,6 +111,7 @@ func (c *Collector) Snapshot() (Snapshot, error) {
 		Load:     load,
 		Docker:   docker,
 		Services: services,
+		Checks:   checks,
 	}, nil
 }
 
@@ -191,20 +222,31 @@ func (c *Collector) readDockerMetric() (DockerMetric, error) {
 	if !c.dockerEnabled {
 		return DockerMetric{}, nil
 	}
-	cmd := exec.Command("docker", "ps", "-a", "--format", "{{.State}}")
+	cmd := exec.Command("docker", "ps", "-a", "--format", "{{.Names}}\t{{.Image}}\t{{.State}}\t{{.Status}}")
 	output, err := cmd.Output()
 	if err != nil {
 		return DockerMetric{}, nil
 	}
 	var metric DockerMetric
 	for _, line := range bytes.Split(bytes.TrimSpace(output), []byte("\n")) {
-		state := strings.TrimSpace(string(line))
+		parts := strings.Split(string(line), "\t")
+		if len(parts) < 4 {
+			continue
+		}
+		container := ContainerStatus{
+			Name:   strings.TrimSpace(parts[0]),
+			Image:  strings.TrimSpace(parts[1]),
+			State:  strings.TrimSpace(parts[2]),
+			Status: strings.TrimSpace(parts[3]),
+		}
+		state := container.State
 		switch state {
 		case "running":
 			metric.Running++
 		case "exited":
 			metric.Exited++
 		}
+		metric.Containers = append(metric.Containers, container)
 	}
 	return metric, nil
 }
@@ -248,6 +290,54 @@ func percent(used, total uint64) float64 {
 		return 0
 	}
 	return float64(used) * 100 / float64(total)
+}
+
+func (c *Collector) runChecks() []CheckStatus {
+	results := make([]CheckStatus, 0, len(c.checks))
+	for _, check := range c.checks {
+		results = append(results, executeCheck(check))
+	}
+	return results
+}
+
+func executeCheck(check CheckConfig) CheckStatus {
+	if check.Timeout == 0 {
+		check.Timeout = 5 * time.Second
+	}
+	result := CheckStatus{Name: check.Name, Type: check.Type, Target: check.Target, Status: "healthy"}
+	started := time.Now()
+	switch check.Type {
+	case "http":
+		client := &http.Client{Timeout: check.Timeout}
+		resp, err := client.Get(check.Target)
+		if err != nil {
+			result.Status = "failed"
+			result.Error = err.Error()
+			break
+		}
+		defer resp.Body.Close()
+		expected := check.ExpectedStatus
+		if expected == 0 {
+			expected = http.StatusOK
+		}
+		if resp.StatusCode != expected {
+			result.Status = "failed"
+			result.Error = fmt.Sprintf("expected %d got %d", expected, resp.StatusCode)
+		}
+	case "tcp":
+		conn, err := net.DialTimeout("tcp", check.Target, check.Timeout)
+		if err != nil {
+			result.Status = "failed"
+			result.Error = err.Error()
+			break
+		}
+		_ = conn.Close()
+	default:
+		result.Status = "failed"
+		result.Error = "unsupported check type"
+	}
+	result.LatencyMS = time.Since(started).Milliseconds()
+	return result
 }
 
 func SleepUntilNextTick(interval time.Duration, fn func() error) error {

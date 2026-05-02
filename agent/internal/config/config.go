@@ -15,6 +15,15 @@ type Config struct {
 	Interval         time.Duration `yaml:"interval"`
 	DockerEnabled    bool          `yaml:"docker_enabled"`
 	ServiceWhitelist []string      `yaml:"service_whitelist"`
+	Checks           []CheckConfig `yaml:"checks"`
+}
+
+type CheckConfig struct {
+	Name           string        `yaml:"name"`
+	Type           string        `yaml:"type"`
+	Target         string        `yaml:"target"`
+	Timeout        time.Duration `yaml:"timeout"`
+	ExpectedStatus int           `yaml:"expected_status"`
 }
 
 func Load(path string) (Config, error) {

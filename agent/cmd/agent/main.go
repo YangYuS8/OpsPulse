@@ -17,7 +17,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	collector := collect.New(cfg.ServiceWhitelist, cfg.DockerEnabled)
+	checks := make([]collect.CheckConfig, 0, len(cfg.Checks))
+	for _, check := range cfg.Checks {
+		checks = append(checks, collect.CheckConfig{
+			Name:           check.Name,
+			Type:           check.Type,
+			Target:         check.Target,
+			Timeout:        check.Timeout,
+			ExpectedStatus: check.ExpectedStatus,
+		})
+	}
+	collector := collect.New(cfg.ServiceWhitelist, checks, cfg.DockerEnabled)
 	client := report.New(cfg.ServerURL, cfg.Token)
 
 	err = collect.SleepUntilNextTick(cfg.Interval, func() error {

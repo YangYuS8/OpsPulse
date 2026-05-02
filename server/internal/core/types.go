@@ -17,6 +17,30 @@ type ServiceStatus struct {
 	Status string `json:"status"`
 }
 
+type ContainerStatus struct {
+	Name   string `json:"name"`
+	Image  string `json:"image"`
+	State  string `json:"state"`
+	Status string `json:"status"`
+}
+
+type CheckStatus struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Target    string `json:"target"`
+	Status    string `json:"status"`
+	LatencyMS int64  `json:"latencyMs"`
+	Error     string `json:"error"`
+}
+
+type MetricPoint struct {
+	Timestamp   time.Time `json:"timestamp"`
+	CPUUsage    float64   `json:"cpuUsage"`
+	MemoryUsage float64   `json:"memoryUsage"`
+	DiskUsage   float64   `json:"diskUsage"`
+	LoadOne     float64   `json:"loadOne"`
+}
+
 type NodeMetrics struct {
 	Hostname string          `json:"hostname"`
 	Uptime   int64           `json:"uptime"`
@@ -26,6 +50,7 @@ type NodeMetrics struct {
 	Load     LoadAverage     `json:"load"`
 	Docker   DockerMetric    `json:"docker"`
 	Services []ServiceStatus `json:"services"`
+	Checks   []CheckStatus   `json:"checks"`
 }
 
 type UsageMetric struct {
@@ -41,8 +66,9 @@ type LoadAverage struct {
 }
 
 type DockerMetric struct {
-	Running int `json:"running"`
-	Exited  int `json:"exited"`
+	Running    int               `json:"running"`
+	Exited     int               `json:"exited"`
+	Containers []ContainerStatus `json:"containers"`
 }
 
 type NodeReport struct {
@@ -64,6 +90,8 @@ type NodeRecord struct {
 	Load          LoadAverage     `json:"load"`
 	Docker        DockerMetric    `json:"docker"`
 	Services      []ServiceStatus `json:"services"`
+	Checks        []CheckStatus   `json:"checks"`
+	MetricsHistory []MetricPoint  `json:"metricsHistory"`
 	Uptime        int64           `json:"uptime"`
 	HeartbeatAge  int64           `json:"heartbeatAgeSeconds"`
 	StatusSummary string          `json:"statusSummary"`
