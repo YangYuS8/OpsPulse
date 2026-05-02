@@ -1,5 +1,7 @@
 # OpsPulse
 
+OpsPulse is a terminal-first homelab heartbeat console powered by a lightweight Go agent.
+
 OpsPulse 是一个本地优先（local-first）的轻量级 DevOps Dashboard + Agent 系统。
 
 核心原则：**节点数据只能来自真实的宿主机 Agent 上报**。
@@ -7,6 +9,40 @@ OpsPulse 是一个本地优先（local-first）的轻量级 DevOps Dashboard + A
 - `agent` 不跑在 Docker Compose 里
 - `server/web/caddy` 可以通过 Docker Compose 运行
 - 没有真实 Agent 时，Dashboard 会显示空状态，而不是伪造 demo 节点
+
+当前 v0.1 只做真实 Agent 上报的节点、资源、服务和事件展示。
+
+![OpsPulse screenshot placeholder](docs/screenshot.png)
+
+## Current Scope
+
+- node heartbeat
+- CPU / memory / disk / load
+- Docker running/exited count
+- systemd whitelist services
+- SSE event stream
+- Caddy behind existing Nginx
+
+## Not Goals
+
+- remote command execution
+- Prometheus replacement
+- full monitoring platform
+- fake demo data
+- complex alerting system
+
+## v0.1 Checklist
+
+- [x] terminal-first console layout
+- [x] real Agent heartbeat ingestion
+- [x] CPU / memory / disk / load telemetry
+- [x] Docker summary and container detail pane
+- [x] systemd whitelist service pane
+- [x] HTTP / TCP checks
+- [x] SSE event stream
+- [x] event de-noising on state change
+- [x] Compose deployment behind existing reverse proxy
+- [ ] screenshot capture for `docs/screenshot.png`
 
 ## 本地开发
 
@@ -185,8 +221,10 @@ Agent 保持单二进制运行，支持 YAML 配置文件，主动向 Server 上
 - memory usage
 - disk usage
 - load average
-- Docker running/exited container count
+- metrics history for recent heartbeats
+- Docker running/exited container count and container details
 - systemd service status from whitelist
+- HTTP/TCP health checks from whitelist-style config
 
 ## API 概览
 
