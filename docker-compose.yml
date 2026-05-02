@@ -14,7 +14,6 @@ services:
     build:
       context: ./web
     environment:
-      PUBLIC_API_BASE: http://server:8080
       HOST: 0.0.0.0
       PORT: 3000
     depends_on:
@@ -27,8 +26,7 @@ services:
       - web
       - server
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:${OPS_CADDY_PORT:-8090}:80"
     volumes:
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

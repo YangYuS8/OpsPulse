@@ -1,4 +1,4 @@
-{$OPS_DOMAIN:localhost} {
+:80 {
   encode gzip zstd
 
   @api path /api/* /healthz

@@ -128,13 +128,22 @@ func (s *Store) GetOverview(ctx context.Context) (core.Overview, error) {
 	return overview, nil
 }
 
+func (s *Store) HasNodes(ctx context.Context) (bool, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT COUNT(1) FROM nodes`)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (s *Store) ListNodes(ctx context.Context) ([]core.NodeRecord, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT node_id, hostname, last_seen, status, uptime, cpu_usage, memory_json, disk_json, load_json, docker_json, services_json FROM nodes ORDER BY hostname ASC`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var nodes []core.NodeRecord
+	nodes := make([]core.NodeRecord, 0)
 	for rows.Next() {
 		node, err := scanNode(rows, s.offlineTimeout)
 		if err != nil {
@@ -156,7 +165,7 @@ func (s *Store) ListEvents(ctx context.Context, limit int) ([]core.Event, error)
 		return nil, err
 	}
 	defer rows.Close()
-	var events []core.Event
+	events := make([]core.Event, 0)
 	for rows.Next() {
 		var event core.Event
 		var createdAt string

@@ -1,14 +1,14 @@
-const apiBase = import.meta.env.PUBLIC_API_BASE || 'http://localhost:8080';
+export const ssr = false;
 
-async function fetchJSON(path) {
-  const response = await fetch(`${apiBase}${path}`);
-  if (!response.ok) {
-    throw new Error(`failed to load ${path}`);
+export async function load({ fetch }) {
+  async function fetchJSON(path) {
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error(`failed to load ${path}`);
+    }
+    return response.json();
   }
-  return response.json();
-}
 
-export async function load() {
   const [overview, nodes, events] = await Promise.all([
     fetchJSON('/api/v1/overview'),
     fetchJSON('/api/v1/nodes'),
@@ -16,7 +16,6 @@ export async function load() {
   ]);
 
   return {
-    apiBase,
     overview,
     nodes,
     events

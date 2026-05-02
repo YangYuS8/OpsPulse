@@ -8,3 +8,5 @@ opsulse.db
 *.db-shm
 *.db-wal
 .env
+agent/agent
+server/server

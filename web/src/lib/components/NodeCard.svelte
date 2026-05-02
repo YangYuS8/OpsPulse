@@ -3,39 +3,45 @@
   export let active = false;
 
   const statusTone = {
-    online: 'border-cyan-400/40 bg-cyan-400/5 text-cyan-200',
-    warn: 'border-amber-400/40 bg-amber-400/10 text-amber-100',
-    offline: 'border-pink-400/40 bg-pink-400/10 text-pink-100'
+    online: 'status-chip-ok',
+    warn: 'status-chip-warn',
+    offline: 'status-chip-fail'
   };
 
   function pct(value) {
     return `${Math.round(value || 0)}%`;
   }
+
+  function meter(value) {
+    const width = 16;
+    const filled = Math.max(0, Math.min(width, Math.round(((value || 0) / 100) * width)));
+    return `${'#'.repeat(filled)}${'-'.repeat(width - filled)}`;
+  }
 </script>
 
-<div class={`panel w-full p-5 text-left transition hover:-translate-y-1 ${active ? 'ring-1 ring-cyan-300/60' : ''}`}>
+<div class={`terminal-pane w-full p-4 text-left ${active ? 'border-emerald-400/80' : ''}`}>
   <div class="flex items-start justify-between gap-4">
     <div>
-      <div class="text-lg font-semibold text-white">{node.hostname}</div>
-      <div class="mt-1 text-xs uppercase tracking-[0.25em] text-slate-400">{node.nodeId}</div>
+      <div class="text-base text-terminal-fg">{node.hostname}</div>
+      <div class="mt-1 text-[11px] uppercase tracking-[0.24em] text-terminal-muted">{node.nodeId}</div>
     </div>
-    <span class={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.2em] ${statusTone[node.status]}`}>{node.status}</span>
+    <span class={statusTone[node.status]}>{node.status === 'online' ? '[ OK ]' : node.status === 'warn' ? '[WARN]' : '[FAIL]'}</span>
   </div>
 
-  <div class="mt-5 grid grid-cols-3 gap-3 text-sm text-slate-300">
+  <div class="mt-4 space-y-2 text-xs text-terminal-dim">
     <div>
-      <div class="text-slate-500">CPU</div>
-      <div class="mt-1 text-cyan-200">{pct(node.cpuUsage)}</div>
+      <div class="flex justify-between"><span>cpu</span><span>{pct(node.cpuUsage)}</span></div>
+      <div class="meter text-terminal-green">[{meter(node.cpuUsage)}]</div>
     </div>
     <div>
-      <div class="text-slate-500">MEM</div>
-      <div class="mt-1 text-cyan-200">{pct(node.memory?.usage)}</div>
+      <div class="flex justify-between"><span>mem</span><span>{pct(node.memory?.usage)}</span></div>
+      <div class="meter text-terminal-green">[{meter(node.memory?.usage)}]</div>
     </div>
     <div>
-      <div class="text-slate-500">DISK</div>
-      <div class="mt-1 text-cyan-200">{pct(node.disk?.usage)}</div>
+      <div class="flex justify-between"><span>disk</span><span>{pct(node.disk?.usage)}</span></div>
+      <div class="meter text-terminal-green">[{meter(node.disk?.usage)}]</div>
     </div>
   </div>
 
-  <div class="mt-5 text-sm text-slate-400">{node.statusSummary}</div>
+  <div class="mt-4 text-xs text-terminal-dim">{node.statusSummary}</div>
 </div>
